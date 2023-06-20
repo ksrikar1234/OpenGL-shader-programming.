@@ -536,10 +536,12 @@ int main()
         
         // glm::mat4 view = glm::translate(glm::mat4(0.1f), glm::vec3((translate_mouse_x*2/WIDTH)-1.0f, (1.0f-(2.0f*translate_mouse_y/HEIGHT)), -3.0f));
 
-        //                            X-axis                Y-axis                 Z-axis
-           cameraPos = glm::vec3(-right_key+left_key, - up_key + down_key, -scroll_offset+2.0f);
+      
          
         //--------------------------Translate + Zoom functionality-----------------------------------------------+
+
+        //                            X-axis                Y-axis                 Z-axis
+        cameraPos = glm::vec3(-right_key+left_key, - up_key + down_key, -scroll_offset+2.0f);
         
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
