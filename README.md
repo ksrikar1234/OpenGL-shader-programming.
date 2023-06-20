@@ -9,4 +9,4 @@ Use modern OpenGL shader approach for Implementing Pan , rotate &amp; selection 
 
 
 ### Compile command
-` g++ Cube_pan_&_rotate.cpp -lGL -lglfw -lGLEW `
+` g++ Mouse_picking.cpp -lGL -lglfw -lGLEW `
