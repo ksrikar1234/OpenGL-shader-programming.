@@ -44,14 +44,15 @@ class Geometry {
 
 public:
 std::vector<Triangle> triangles;
+
 std::vector<COORD> VERTEX_ARRAY_GL ;
+
 uint64_t NUM_TRIANGLES = 0 ;
 
 Geometry(const std::string& filename = "NOT_SET")
 {
   this->readSTLFile(filename);
   this->NUM_TRIANGLES = this->triangles.size();
- // std::cout << "Num triangles =" << this->NUM_TRIANGLES;
   this->LOAD_GL_VERTEX_ARRAY();
 }
 
@@ -176,33 +177,54 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
    
  //  std::cout << "loading vertices for vertex array \n" ;
 
-   uint32_t id = 0;
+   GLuint TriangleID = 0;
+   
+   
+   
+ 
    for(auto triangle : this->triangles)
        {
           
+            
+           GLuint R =  (TriangleID & 0b00000000000000000000000011111111); 
+           GLuint G =  (TriangleID & 0b00000000000000001111111100000000) >> 8; 
+           GLuint B =  (TriangleID & 0b00000000111111110000000000000000) >> 16;
+
+           std::cout << R  << " " << G << " " << B << " " << '\n';
+
+           GLfloat r = float(R)/255.0f;
+           GLfloat g = float(G)/255.0f;
+           GLfloat b = float(B)/255.0f;
+     
+           std::cout << r  << " " << g << " " << b << " " << '\n';
+
+
             for(auto coord : triangle.vertex1)        this->VERTEX_ARRAY_GL.push_back(coord); 
-
+            
+            this->VERTEX_ARRAY_GL.push_back(r);
+            this->VERTEX_ARRAY_GL.push_back(g);
+            this->VERTEX_ARRAY_GL.push_back(b);
           
-            this->VERTEX_ARRAY_GL.push_back(1.0f); 
-            this->VERTEX_ARRAY_GL.push_back(0.0f); 
-            this->VERTEX_ARRAY_GL.push_back(0.0f); 
-
-
             for(auto coord :  triangle.vertex2)       this->VERTEX_ARRAY_GL.push_back(coord); 
-         
-            this->VERTEX_ARRAY_GL.push_back(0.0f); 
-            this->VERTEX_ARRAY_GL.push_back(1.0f); 
-            this->VERTEX_ARRAY_GL.push_back(0.0f);
-
+           
+            this->VERTEX_ARRAY_GL.push_back(r);
+            this->VERTEX_ARRAY_GL.push_back(g);
+            this->VERTEX_ARRAY_GL.push_back(b);
+       
             for(auto coord :  triangle.vertex3)        this->VERTEX_ARRAY_GL.push_back(coord); 
+   
+            
+            this->VERTEX_ARRAY_GL.push_back(r);
+            this->VERTEX_ARRAY_GL.push_back(g);
+            this->VERTEX_ARRAY_GL.push_back(b);
 
-            this->VERTEX_ARRAY_GL.push_back(1.0f); 
-            this->VERTEX_ARRAY_GL.push_back(0.0f); 
-            this->VERTEX_ARRAY_GL.push_back(1.0f);    
+            ++TriangleID;
 
-            ++id;
+        
         }    
     
+  std::cout << "Triangle Num = " << TriangleID << "\n";
+
      return this->VERTEX_ARRAY_GL;         
 
 }

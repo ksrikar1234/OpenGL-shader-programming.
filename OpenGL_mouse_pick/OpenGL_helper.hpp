@@ -1,17 +1,8 @@
 #include <iostream>
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <regex>
-
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "shaders.hpp"
 
@@ -71,8 +62,8 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
           }
         else 
            {   
-               rotate_mouse_x = mouse_x - initialMouseX;
-               rotate_mouse_y = mouse_y - initialMouseY;
+               rotate_mouse_x += mouse_x - initialMouseX;
+               rotate_mouse_y += mouse_y - initialMouseY;
            }
        }
 
@@ -99,8 +90,8 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 
           else 
            {   
-               translate_mouse_x = mouse_x - initialMouseX;
-               translate_mouse_y = mouse_y - initialMouseY;
+               translate_mouse_x += mouse_x - initialMouseX;
+               translate_mouse_y += mouse_y - initialMouseY;
            }
        }
 
@@ -236,42 +227,3 @@ inline short int check_glfw_window(GLFWwindow* window) {
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------+
-/*
-inline GLuint init_window(GLFWwindow* window) {
-
-    //-------------------------Initialize GLFW---------------------------------------------------------+
-     check_glfwInit();
-    // -----------------------Set OpenGL version and profile to 3.3 core--------------------------------+
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    
-    //--------------------------Create a GLFW window----------------------------------------------------+
-
-    
-    check_glfw_window(window);
-    glfwMakeContextCurrent(window);
-
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);    
- 
-   //----------------------Peripherals input handling--------------------------------------------------+
-
-   // glfwSetCursorPosCallback(window, initialPositionCallback);
-      glfwSetCursorPosCallback(window, mousePositionCallback);
-      glfwSetScrollCallback(window, scrollCallback);
-      glfwSetKeyCallback(window, keyCallback);
-
-   //------------------------Initialize GLEW----------------------------------------------------------+
-   
-    if (glewInit() != GLEW_OK)
-    {
-        std::cerr << "Failed to initialize GLEW" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-
-}
-*/
-
-
