@@ -4,12 +4,67 @@
 #include <GLFW/glfw3.h>
 
 
-#include "shaders.hpp"
+//-----------------------------------GLFW & GLEW Initiation----------------------------------------------------------------------+
 
-//-------------------------------------------------Screen Resolution---------------------------------------------------------------------------+
+ 
 
-const GLuint WIDTH = 960, HEIGHT = 540;
+      //------------------------------------Screen Resolution-----------------------------------------------------+
+     
+         GLFWwindow* window;
+         const GLuint SCR_WIDTH = 960, SCR_HEIGHT = 540;
 
+      //-------------------glfw window creation , checks , destruction Blah blah blah-----------------------------+
+
+        inline void framebuffer_size_callback(GLFWwindow* window, int SCR_WIDTH, int SCR_HEIGHT)
+        {
+           glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        }
+        inline void processInput(GLFWwindow* window)
+        {
+            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+        }
+        inline short int check_glfwInit() 
+        {
+            if (!glfwInit()) {std::cerr << "Failed to initialize GLFW" << '\n';     return -1;  }
+            else {std::cout << "Successfully initialised GLFW" << '\n'; return  0;  } 
+        } 
+       inline short int check_glfw_window(GLFWwindow* window) 
+       {
+           if (!window) { std::cerr << "Failed to create GLFW window" << std::endl; glfwTerminate(); return -1; } 
+           else {std::cout << "Successfully created GLFW window" ; return 0; }
+       }    
+      
+     //--------------------------Create a GLFW window-------------------------------------------------------------+
+     
+      inline void create_window() 
+       {
+           // glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);   // Enable this for Fixing WINDOW SIZE
+           window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Triangle Picking", NULL, NULL);
+           // glfwSetWindowSizeLimits(window, SCR_WIDTH, SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT); // MIN MAX of WINDOW SIZE
+           check_glfw_window(window);
+           glfwMakeContextCurrent(window);
+           glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);      
+       }
+    
+     //--------------------------------------------------------------------------------------------------+
+
+     // -----------------------Set OpenGL version and profile to 3.3 core--------------------------------+
+
+      inline void set_opengl_version()
+       {
+         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+       }
+
+      inline short int  check_glewInit() 
+       {
+         if (glewInit() != GLEW_OK)  {std::cerr << "Failed to initialize GLEW" << std::endl; glfwTerminate(); return -1; }
+         else { std::cout << "Successfully initialised GLEW"; return 0;}
+       }
+
+
+//---------------------------------------------------------------------------------------------------------------------------------------------+
 //+------------------------------Globals for Peripheral inputs inputs--------------------------------------------------------------------------+
 
 float mouse_x  = 0.0f , mouse_y = 0.0f;
@@ -28,7 +83,8 @@ float up_key = 0.0f , down_key = 0.0f , left_key = 0.0f , right_key = 0.0f;
 
 float w_key = 0.0f , a_key = 0.0f , s_key = 0.0f , d_key = 0.0f , k_key = 0.0f , l_key = 0.0f;
 
-//--------------------------------------------------Peripheral input handling---------------------------------------------------+
+//--------------------------------------------------Peripheral input handling--------------------------------------------------------------+
+
 
 inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
@@ -41,8 +97,8 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
     bool initial_rightClick = true;
     bool initial_leftClick = true;
 
-    // float ndcX = (2.0f * mouse_x) / WIDTH - 1.0f;
-    // float ndcY = 1.0f - (2.0f * mouse_y) / HEIGHT;
+    // float ndcX = (2.0f * mouse_x) / SCR_WIDTH - 1.0f;
+    // float ndcY = 1.0f - (2.0f * mouse_y) / SCR_HEIGHT;
 
     int rightButtonState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     int leftButtonState  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
@@ -83,9 +139,8 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
             initialMouseX = mouse_x;
             initialMouseY = mouse_y;
             initial_leftClick  = false;
-            translate_mouse_x = initialMouseX;
-            translate_mouse_y = initialMouseY;
-
+            translate_mouse_x =  initialMouseX;
+            translate_mouse_y =  initialMouseY;
           }
 
           else 
@@ -98,25 +153,29 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
         if(leftButtonState  == GLFW_RELEASE) 
           {
 
-             initial_leftClick = true;
-
+            initialMouseX = translate_mouse_x;
+            initialMouseY = translate_mouse_y;
+            initial_leftClick  = true;
+    
           }       
 }
 
+//-------------------------SCROLL INPUT HANDLING -------------------------------------------------+
 
 inline void scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
     // Handle scroll input here
     // xOffset and yOffset represent the scroll offset values
     // xOffset indicates horizontal scrolling (e.g., trackpad swipe left/right)
     // yOffset indicates vertical scrolling (e.g., mouse wheel up/down)
+    // Usage : Zoom functionality . Print the scroll offsets
 
-    // Example: Print the scroll offsets
 
     scroll_offset += float(yOffset)/10 ;
 
     std::cout << "Scroll: xOffset = " << xOffset << ", yOffset = " << scroll_offset << std::endl;
 }
 
+//-----------------------Keyboard Input------------------------------------------------------------+
 
 inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     // Check if the key is one of the arrow keys
@@ -159,7 +218,7 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
         std::cout << "W key pressed" << std::endl;
     }
        else if (key == GLFW_KEY_A && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
-        // Handle down arrow key spress
+        // Handle A arrow key press
         // Example: Move the camera or perform some action
          
          a_key += 0.05f;
@@ -167,7 +226,7 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
         std::cout << "A key pressed" << std::endl;
     }
        else if (key == GLFW_KEY_S && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
-        // Handle down arrow key press
+        // Handle S arrow key press
         // Example: Move the camera or perform some action
          
          s_key += 0.05f;
@@ -175,17 +234,15 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
         std::cout << "S key pressed" << std::endl;
     }
        else if (key == GLFW_KEY_D && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
-        // Handle down arrow key press
+        // Handle D key press
         // Example: Move the camera or perform some action
          
          d_key += 0.05f;
 
         std::cout << "D key pressed" << std::endl;
     }
-
-
        else if (key == GLFW_KEY_K && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
-        // Handle down arrow key press
+        // Handle K key press
         // Example: Move the camera or perform some action
          
          k_key += 0.05f;
@@ -193,7 +250,7 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
         std::cout << " K key pressed" << std::endl;
     }
        else if (key == GLFW_KEY_L && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
-        // Handle down arrow key press
+        // Handle L key press
         // Example: Move the camera or perform some action
          
          l_key += 0.05f;
@@ -202,28 +259,10 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
     } 
 }
 
-//--------------------------------glfw window creation , checks , destruction Blah blah blah-------------------------------------+
 
-inline void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+inline void set_up_peripheral_inputs()
 {
-    glViewport(0, 0, width, height);
+      glfwSetCursorPosCallback(window, mousePositionCallback);
+      glfwSetScrollCallback(window, scrollCallback);
+      glfwSetKeyCallback(window, keyCallback);
 }
-
-inline void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-inline short int check_glfwInit() {
-      if (!glfwInit()) {std::cerr << "Failed to initialize GLFW" << '\n';     return -1;  }
-      else             {std::cout << "Successfully initialised GLFW" << '\n'; return  0;  } 
-      } 
-
-inline short int check_glfw_window(GLFWwindow* window) {
-    if (!window) { std::cerr << "Failed to create GLFW window" << std::endl; glfwTerminate(); return -1; } 
-    else {std::cout << "Successfully created window" ; return 0; }
-}    
-
-
-//-------------------------------------------------------------------------------------------------------------------------------------+
