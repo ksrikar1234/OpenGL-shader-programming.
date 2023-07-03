@@ -3,15 +3,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-
-//--------------------------------------Vertex Shader-----------------------------------------------------------------------------+
-
-
-const char* vertexShaderSource = R"(
+//---------------------------Offscreen Rendering for face picking using  mouse--------------------------------------------------------------+ 
+const char* OffScreenVertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
     layout (location = 1) in vec3 aColor;
-   
 
     out vec3 outColor;
 
@@ -20,15 +16,13 @@ const char* vertexShaderSource = R"(
 
     void main()
     {
-
-        gl_Position = mvp*vec4(aPos, 1.0);  
-           outColor = aColor;
+        gl_Position = mvp*vec4(aPos, 1.0);
+        outColor = aColor;
     }
 )";
 
-//-------------------------------------------Fragment Shader----------------------------------------------------------------+
 
-const char* fragmentShaderSource = R"(
+const char* OffScreenFragmentShaderSource = R"(
 
     #version 330 core
     in vec3 outColor;
@@ -40,71 +34,218 @@ const char* fragmentShaderSource = R"(
     }
 )";
 
+//-------------------------------------------------------------------------------------------------------------------------------------------+
+
+//--------------------------------------Onscreen rendering Vertex Shader-----------------------------------------------------------------------------+
+
+
+const char* OnScreenVertexShaderSource = R"(
+#version 330 core
+
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 color;
+layout(location = 2) in vec3 normal;
+
+
+out vec3 fragNormal;
+out vec3 fragPosition;
+out vec3 fragLightDir;
+out vec3 vertexColor;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+uniform vec3 lightPosition;
+
+void main()
+{
+    // Transform vertex position and normal to world space
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vec3 worldNormal = mat3(transpose(inverse(modelMatrix))) * normal;
+
+    // Compute the light direction
+    fragLightDir = normalize(lightPosition - worldPosition.xyz);
+
+    // Pass data to the fragment shader
+    fragNormal = worldNormal;
+    fragPosition = worldPosition.xyz;
+    vertexColor = color;
+
+    // Transform the vertex position to clip space
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+}
+)";
+
+//------------------------------------------On Screen rendering Fragment Shader----------------------------------------------------------------+
+
+const char* OnScreenFragmentShaderSource = R"(
+
+#version 330 core
+
+in vec3 fragNormal;
+in vec3 fragPosition;
+in vec3 fragLightDir;
+in vec3 vertexColor;
+
+out vec4 fragColor;
+
+uniform vec3 lightAmbient;
+uniform vec3 lightDiffuse;
+uniform vec3 lightSpecular;
+uniform vec3 materialAmbient;
+uniform vec3 materialDiffuse;
+uniform vec3 materialSpecular;
+uniform float materialShininess;
+
+void main()
+{
+    // Compute the normal and light direction in fragment space
+    vec3 normal = normalize(fragNormal);
+    vec3 lightDir = normalize(fragLightDir);
+
+    // Compute the diffuse color
+    float diffuseFactor = max(dot(normal, lightDir), 0.0);
+    vec3 diffuseColor = lightDiffuse * materialDiffuse * diffuseFactor;
+
+    // Compute the specular color
+    vec3 viewDir = normalize(-fragPosition);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
+    vec3 specularColor = lightSpecular * materialSpecular * specularFactor;
+
+    // Compute the final color (ambient + diffuse + specular)
+    vec3 ambientColor = lightAmbient * materialAmbient;
+    vec3 finalColor = ambientColor + diffuseColor + specularColor;
+    finalColor = finalColor * vertexColor;
+ 
+    fragColor = vec4(finalColor, 1.0);
+}
+
+)";
+
 //--------------------------------------------------------------------------------------------------------------------------------+
 
 
-//-------------------------------Compile Shaders---------------------------------------------------------------------------------------------------+
 
-GLuint vertexShader , fragmentShader ;
 
-GLuint shaderProgram;
+//-------------------------------Manage , Compile Shaders---------------------------------------------------------------------------------------------------+
 
-void compile_shaders()
+GLuint  OnScreenVertexShader , OnScreenFragmentShader  , OffScreenVertexShader ,  OffScreenFragmentShader ;
+
+GLuint  OnScreenShaderProgram , OffScreenShaderProgram  ;
+
+inline void manage_shaders()
 {
    
-    //---------------------------- Create vertex shader----------------------------------------------------+
+    //--------------------- Create  vertex shader for Onscreen rendering-------------------------------------+
     
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-    glCompileShader(vertexShader);
+    OnScreenVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(OnScreenVertexShader, 1, &OnScreenVertexShaderSource, nullptr);
+    glCompileShader(OnScreenVertexShader);
 
-    //-------------------------- Check for vertex shader compile errors-------------------------------------+
+    //----------------------------Check for vertex shader compile errors-------------------------------------+
    
     GLint success;
     GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(OnScreenVertexShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+        glGetShaderInfoLog(OnScreenVertexShader, 512, nullptr, infoLog);
+        std::cerr << "Vertex shader or Onscreen rendering failed to compile  : \n" << infoLog << std::endl;
+    }
+
+    //-------------------------------Create fragment shader for Onscreen rendering-----------------------------------------------+
+
+    OnScreenFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(OnScreenFragmentShader, 1, &OnScreenFragmentShaderSource, nullptr);
+    glCompileShader(OnScreenFragmentShader);
+
+    //-----------------------Check for fragment shader compile errors-------------------------------------+
+
+    glGetShaderiv(OnScreenFragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(OnScreenFragmentShader, 512, nullptr, infoLog);
+        std::cerr << "Fragment shader for Onscreen rendering failed to compile :\n" << infoLog << std::endl;
+    }
+
+    //---------------------------Create shader program-----------------------------------------------------+
+    
+    OnScreenShaderProgram = glCreateProgram();
+    glAttachShader(OnScreenShaderProgram, OnScreenVertexShader);
+    glAttachShader(OnScreenShaderProgram, OnScreenFragmentShader);
+    glLinkProgram(OnScreenShaderProgram);
+
+    //---------------------------Check for shader program link errors--------------------------------------+
+   
+    glGetProgramiv(OnScreenShaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(OnScreenShaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Onscreen Shader program linking failed:\n" << infoLog << std::endl;
+    }
+   
+   //---------------------------Delete shaders as they're linked into the program --------------------------+
+
+     glDeleteShader(OnScreenVertexShader);
+     glDeleteShader(OnScreenFragmentShader);
+
+
+  //---------------------------- Create Vertex shader for OffScreen rendering-------------------------------+
+    
+    OffScreenVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(OffScreenVertexShader, 1, &OffScreenVertexShaderSource, nullptr);
+    glCompileShader(OffScreenVertexShader);
+
+    //-------------------------- Check for vertex shader compile errors-------------------------------------+
+    
+    glGetShaderiv(OffScreenVertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(OffScreenVertexShader, 512, nullptr, infoLog);
         std::cerr << "Vertex shader compilation failed:\n" << infoLog << std::endl;
     }
 
     //-------------------------------Create fragment shader-----------------------------------------------+
 
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
+    OffScreenFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(OffScreenFragmentShader, 1, &OffScreenFragmentShaderSource, nullptr);
+    glCompileShader(OffScreenFragmentShader);
 
     //-----------------------Check for fragment shader compile errors-------------------------------------+
 
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(OffScreenFragmentShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        glGetShaderInfoLog(OffScreenFragmentShader, 512, nullptr, infoLog);
         std::cerr << "Fragment shader compilation failed:\n" << infoLog << std::endl;
     }
 
     //---------------------------Create shader program-----------------------------------------------------+
     
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    OffScreenShaderProgram = glCreateProgram();
+    glAttachShader(OffScreenShaderProgram, OffScreenVertexShader);
+    glAttachShader(OffScreenShaderProgram, OffScreenFragmentShader);
+    glLinkProgram(OffScreenShaderProgram);
 
     //---------------------------Check for shader program link errors--------------------------------------+
    
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    glGetProgramiv(OffScreenShaderProgram, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        glGetProgramInfoLog(OffScreenShaderProgram, 512, nullptr, infoLog);
         std::cerr << "Shader program linking failed:\n" << infoLog << std::endl;
     }
+   
+   //---------------------------Delete shaders as they're linked into the program --------------------------+
+
+     glDeleteShader(OffScreenVertexShader);
+     glDeleteShader(OffScreenFragmentShader);
 
 }
 
 /*
-
-.......................................................................
+..........................Basic Shader .............................................
 
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -122,7 +263,21 @@ const char* vertexShaderSource = R"(
         outColor = aColor;
     }
 )";
-.........................................................................
+
+
+const char* fragmentShaderSource = R"(
+
+    #version 330 core
+    in vec3 outColor;
+    out vec4 FragColor;
+
+    void main()
+    {
+        FragColor = vec4(outColor, 1.0);
+    }
+)";
+
+...............Unique Colour Generation using Unique Triangle ID shader program ...........................................
 
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -149,7 +304,7 @@ const char* vertexShaderSource = R"(
     }
 )";
 
-.............................................................................
+.................................Actual logic ............................................
 
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -180,7 +335,7 @@ const char* vertexShaderSource = R"(
     }
 )";
 
-.................................................................................
+..........................vertex code that was supposed to work  .......................................................
 
 const char* vertexShaderSource = R"(
     #version 330 core
@@ -214,6 +369,99 @@ const char* vertexShaderSource = R"(
  
     }
 )";
+
+...........................Multiple Light Sources..............................................
+vertex shader code
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+#version 330 core
+
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 color;
+
+out vec3 fragNormal;
+out vec3 fragPosition;
+out vec3 fragLightDir;
+out vec3 fragColor;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+uniform vec3 lightPositions[8]; // Array of light positions
+
+void main()
+{
+    // Transform vertex position and normal to world space
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vec3 worldNormal = mat3(transpose(inverse(modelMatrix))) * normal;
+
+    // Pass data to the fragment shader
+    fragNormal = worldNormal;
+    fragPosition = worldPosition.xyz;
+    fragColor = color;
+
+    // Compute the light directions for each light source
+    for (int i = 0; i < 8; i++) {
+        fragLightDir[i] = normalize(lightPositions[i] - worldPosition.xyz);
+    }
+
+    // Transform the vertex position to clip space
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+}
+................................................................................................
+fragment shader code
+................................................................................................
+
+#version 330 core
+
+in vec3 fragNormal;
+in vec3 fragPosition;
+in vec3 fragLightDir[8]; // Array of light directions
+in vec3 fragColor;
+
+out vec4 fragOutput;
+
+uniform vec3 lightAmbient[8]; // Array of light ambient colors
+uniform vec3 lightDiffuse[8]; // Array of light diffuse colors
+uniform vec3 lightSpecular[8]; // Array of light specular colors
+uniform vec3 materialAmbient;
+uniform vec3 materialDiffuse;
+uniform vec3 materialSpecular;
+uniform float materialShininess;
+
+void main()
+{
+    vec3 normal = normalize(fragNormal);
+    vec3 viewDir = normalize(-fragPosition);
+
+    vec3 finalColor = vec3(0.0);
+
+    for (int i = 0; i < 8; i++) {
+        vec3 lightDir = normalize(fragLightDir[i]);
+
+        float diffuseFactor = max(dot(normal, lightDir), 0.0);
+        vec3 diffuseColor = lightDiffuse[i] * materialDiffuse * diffuseFactor;
+
+        vec3 reflectDir = reflect(-lightDir, normal);
+        float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
+        vec3 specularColor = lightSpecular[i] * materialSpecular * specularFactor;
+
+        vec3 ambientColor = lightAmbient[i] * materialAmbient;
+        finalColor += ambientColor + diffuseColor + specularColor;
+    }
+
+    // Multiply the final color with the vertex color
+    vec3 outputColor = finalColor * fragColor;
+
+    fragOutput = vec4(outputColor, 1.0);
+}
+
+
+
+
+
+//--------------Not tested Alternative shaders----------------------------------------------------------
+
 
 #version 330 core
 
@@ -268,5 +516,6 @@ void main()
 }
 
 
+//----------------------------------------------------------------------------------------------
 
 */

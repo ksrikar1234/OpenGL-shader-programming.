@@ -29,15 +29,13 @@ int main()
 
    //----------------------------LOAD & SET UP geometry ----------------------------------------------------------+
 
-    std::string filename = "/home/ubuntu-testing/wing.stl";
+    std::string filename = "/home/ubuntu-testing/fuselage.stl";
     
     // std::string filename = "/home/ubuntu-testing/GridPro.v8.0/doc/WS/Tutorials/Advanced/Tutorial_2_DLR_F6/fuselage.stl"; // Replace with your STL file path
     
     Geometry::Geometry geometry(filename);
-    
-    geometry.VERTEX_ARRAY_GL;
 
-    std::cout << "Number of triangles = " << geometry.VERTEX_ARRAY_GL.size()/18 << "\n";
+    std::cout << "Number of triangles = " << geometry.VERTEX_ARRAY_GL.size()/27 << "\n";
 
     //--------------------------------Initialize GLFW----------------------------------------------------------------------------+
       check_glfwInit();
@@ -49,11 +47,8 @@ int main()
       set_up_peripheral_inputs();
     //--------------------------------Initialize GLEW----------------------------------------------------------------------------+
       check_glewInit();
-    //--------------------------------Compile Shaders & link---------------------------------------------------------------------+
-      compile_shaders();
-    //--------------------------------Delete shaders as they're linked into the program -----------------------------------------+
-      glDeleteShader(vertexShader);
-      glDeleteShader(fragmentShader);
+    //--------------------------------Manage, Compile, link & Delete shaders-----------------------------------------------------+
+      manage_shaders();
     //--------------------------------Create vertex buffer object (VBO) and vertex array object (VAO)----------------------------+   
        GLuint VBO, VAO;
        glGenBuffers(1, &VBO);
@@ -66,13 +61,18 @@ int main()
 
     //-------------------------------Position attribute--------------------------------------------------------------------------+
    
-       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat) , (void*)0);
+       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat) , (void*)0);
        glEnableVertexAttribArray(0);
 
     //------------------------color attribute-------------------------------------------------------------------------------------+
     
-       glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat) , (void*)(3 * sizeof(GLfloat)));
+       glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat) , (void*)(3 * sizeof(GLfloat)));
        glEnableVertexAttribArray(1);
+
+    //----------------------------------------------------------------------------------------------------------------------------+
+           
+       glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat) , (void*)(6 * sizeof(GLfloat)));
+       glEnableVertexAttribArray(2);
 
     //---------------------Unbind VBO and VAO---------------------------------------------------------------+
     
@@ -100,12 +100,12 @@ int main()
 
                 //-----------------------------Clear the screen----------------------------------------------------+
 
-                   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                   glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 //--------------------------Activate shader program------------------------------------------------+
         
-                   glUseProgram(shaderProgram);
+                   glUseProgram(OnScreenShaderProgram);
 
                //---------------------------Create transformations------------------------------------------------+
                //---------------------------Translate + Rotate + Zoom functionality-------------------------------+
@@ -115,9 +115,52 @@ int main()
                //------------------------Pass transformation matrices to the shader-------------------------------+
 
                   glm::mat4 mvp = projection * view * model; 
-                  GLint mvpLoc = glGetUniformLocation(shaderProgram, "mvp");
+                  
+                  GLint projectionLoc = glGetUniformLocation(OnScreenShaderProgram, "projectionMatrix");
+                  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+                  GLint viewLoc = glGetUniformLocation(OnScreenShaderProgram, "viewMatrix");
+                  glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+                  GLint modelLoc = glGetUniformLocation(OnScreenShaderProgram, "modelMatrix");
+                  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+
+/*
+                  GLint mvpLoc = glGetUniformLocation(OnScreenShaderProgram, "mvp");
                   glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
-   
+ */  
+               //-------------------------------------------------------------------------------------------------+
+
+                 // Get the location of the lightPosition uniform variable
+                 GLuint lightPositionLocation = glGetUniformLocation(OnScreenShaderProgram, "lightPosition");
+
+                 // Set the value of the lightPosition uniform variable
+                 glm::vec3 lightPosition(10.0f + g_key - j_key , 2.0f + y_key - h_key , 0.0f + o_key - p_key); // movable light source
+
+
+                 glUniform3f(lightPositionLocation, lightPosition.x, lightPosition.y, lightPosition.z);
+                
+                 GLuint lightAmbientLocation = glGetUniformLocation(OnScreenShaderProgram, "lightAmbient");
+                 GLuint lightDiffuseLocation = glGetUniformLocation(OnScreenShaderProgram, "lightDiffuse");
+                 GLuint lightSpecularLocation = glGetUniformLocation(OnScreenShaderProgram, "lightSpecularLocation");
+
+                 GLuint materialAmbientLocation = glGetUniformLocation(OnScreenShaderProgram, "materialAmbient");
+                 GLuint materialDiffuseLocation = glGetUniformLocation(OnScreenShaderProgram, "materialDiffuse");
+                 GLuint materialSpecularLocation = glGetUniformLocation(OnScreenShaderProgram, "materialSpecular");
+                 GLuint materialShininessLocation = glGetUniformLocation(OnScreenShaderProgram, "materialShininess");
+
+                  // Set the lighting properties
+                  glUniform3f(lightAmbientLocation, 0.5f, 0.5f, 0.5f);
+                  glUniform3f(lightDiffuseLocation, 0.8f, 0.8f, 0.8f);
+                  glUniform3f(lightSpecularLocation, 1.0f, 1.0f, 1.0f);
+
+                 // Set the material properties
+                  glUniform3f(materialAmbientLocation, 0.2f, 0.2f, 0.2f);
+                  glUniform3f(materialDiffuseLocation, 0.8f, 0.8f, 0.8f);
+                  glUniform3f(materialSpecularLocation, 1.0f, 1.0f, 1.0f);
+                  glUniform1f(materialShininessLocation, 64.0f);
+
                //---------------------------------Draw call-------------------------------------------------------+
        
                   glBindVertexArray(VAO);
@@ -125,7 +168,7 @@ int main()
         
               //------------------------------Unbind the VAO------------------------------------------------------+  
 
-                 glBindVertexArray(0);
+               //  glBindVertexArray(0);
 
               //------------------------------Swap buffers and poll events----------------------------------------+
                
@@ -138,8 +181,8 @@ int main()
                  GLubyte PixelData[4];
  
                  glGetIntegerv(GL_VIEWPORT , viewport); 
-
                  glReadPixels(mouse_x, viewport[3] - mouse_y -1 , 1 , 1, GL_RGBA, GL_UNSIGNED_BYTE, PixelData);
+
 
                  GLubyte r = PixelData[0];
                  GLubyte g = PixelData[1];
@@ -158,6 +201,7 @@ int main()
                  std::cout << "Pixel at (" << mouse_x  << ", " << mouse_y << "): RGBA(" << static_cast<unsigned int>(r) << ", " << static_cast<unsigned int>(g) << ", " << static_cast<unsigned int>(b) << ", " << static_cast<unsigned int>(a) << ")" << std::endl;
        
                  std::cout << "Selected Triangle ID = " << Selected_Triangle_ID  << "\n"; 
+
 
                 // std::cout << "selected_color_vec = (" << R <<", "<< G << ", " << B << ")" << '\n'; 
                  
@@ -181,6 +225,9 @@ int main()
 
                 //-----------------------------Fps counter------------------------------------------------------+
 
+
+                  glUseProgram(0);
+
                  double currentTime = glfwGetTime();
                  frameCount++;
                  if (currentTime - lastTime >= 1.0)
@@ -197,7 +244,8 @@ int main()
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    glDeleteProgram(OnScreenShaderProgram);
+    glDeleteProgram(OffScreenShaderProgram);
     glfwTerminate();
     return 0;
 }

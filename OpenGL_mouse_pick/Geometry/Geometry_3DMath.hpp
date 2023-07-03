@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <regex>
+#include<cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -14,7 +15,7 @@
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-glm::mat4 view ;
+glm::mat4 view;
 glm::mat4 model;
 glm::mat4 projection;
 
@@ -24,11 +25,13 @@ glm::mat4 projection;
 inline void setup_transformations()
 
 {
+    float time = glfwGetTime();
+
     float set_axis_x =  10*((2.0*rotate_mouse_x/SCR_WIDTH)-1.0f) , set_axis_y = 10*(1.0f-(2.0*rotate_mouse_y/SCR_HEIGHT));
 
-    auto X = (2.0f * translate_mouse_x ) / SCR_WIDTH - 1.0f  , Y = 1.0f - (2.0f * translate_mouse_y) / SCR_HEIGHT;
+    auto X = (2.0f * std::abs(translate_mouse_x )) / SCR_WIDTH - 1.0f  , Y = 1.0f - (2.0f * std::abs(translate_mouse_y)) / SCR_HEIGHT;
 
-    //-----------------------------------Translate + Zoom functionality-------------------------------------+
+    //-----------------------------Translate + Rotate  + Zoom functionality---------------------------------+
     //-------------------------X-axis-----------------Y-axis----------------Z-axis--------------------------+
 
     cameraPos = glm::vec3(-right_key + left_key - X, - up_key + down_key - Y, 20.0f - scroll_offset*6); //  use (-scroll_offset + 2.0f) for zooming but distorts mouse ray  so dont use it (Remember this)
@@ -37,11 +40,11 @@ inline void setup_transformations()
 
     view = glm::rotate(view, (-set_axis_y + w_key - s_key ), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    view = glm::rotate(view, (-set_axis_x + d_key - a_key), glm::vec3(0.0f, 1.0f, 0.0f));
+    view = glm::rotate(view, (-set_axis_x + d_key - a_key ), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    view = glm::rotate(view, (-set_axis_x + l_key - k_key ), glm::vec3(0.0f, 0.0f, 1.0f));
+    view = glm::rotate(view, ( l_key - k_key ), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    //-----------------------------------Rotate functionality-----------------------------------------------+
+    //-----------------------------------functionality-----------------------------------------------+
 
     model = glm::mat4(1.0f);
         

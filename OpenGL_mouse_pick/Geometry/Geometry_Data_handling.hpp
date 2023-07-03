@@ -192,17 +192,26 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
      
            std::cout << r  << " " << g << " " << b << " " << '\n';
 
+    //---------------------------------------------------------------------------------------------------      
+
            for( auto coordinate : triangle.vertex1 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
             
            this->VERTEX_ARRAY_GL.push_back(r);
            this->VERTEX_ARRAY_GL.push_back(g);
            this->VERTEX_ARRAY_GL.push_back(b);
           
+           for( auto norm_dir : triangle.normal )       this->VERTEX_ARRAY_GL.push_back(norm_dir);
+    //---------------------------------------------------------------------------------------------------
+
            for( auto coordinate : triangle.vertex2 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
            
            this->VERTEX_ARRAY_GL.push_back(r);
            this->VERTEX_ARRAY_GL.push_back(g);
            this->VERTEX_ARRAY_GL.push_back(b);
+
+           for( auto norm_dir : triangle.normal )       this->VERTEX_ARRAY_GL.push_back(norm_dir);
+
+    //---------------------------------------------------------------------------------------------------        
        
            for( auto coordinate : triangle.vertex3 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
                
@@ -210,7 +219,9 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
            this->VERTEX_ARRAY_GL.push_back(g);
            this->VERTEX_ARRAY_GL.push_back(b);
 
-//         for( auto norm_dir : triangle.normal )       this->VERTEX_ARRAY_GL.push_back(norm_dir);
+           for( auto norm_dir : triangle.normal )       this->VERTEX_ARRAY_GL.push_back(norm_dir);
+
+    //---------------------------------------------------------------------------------------------------        
 
            ++TriangleID;       
         }    
