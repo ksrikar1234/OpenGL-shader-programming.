@@ -14,7 +14,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-
 typedef uint64_t TRIANGLE_ID;
 typedef GLfloat POINT;
 typedef GLfloat COORD;
@@ -67,7 +66,6 @@ std::vector<Triangle> readSTLFile(const std::string& filename) {
             std::cerr << "Error opening file: " << filename << std::endl;
             return this->triangles;
         }
-      
          std::string line;
          std::string token;
 
@@ -175,7 +173,7 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
    
  //  std::cout << "loading vertices for OpenGL vertex array \n" ;
 
-   GLuint TriangleID = 0;   
+   GLuint TriangleID = 1;   
  
    for(auto triangle : this->triangles)
        {
@@ -192,9 +190,9 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
      
            std::cout << r  << " " << g << " " << b << " " << '\n';
 
-    //---------------------------------------------------------------------------------------------------      
+         //---------------------------------------------------------------------------------------------------      
 
-           for( auto coordinate : triangle.vertex1 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
+           for( auto coordinate : triangle.vertex1 )    this->VERTEX_ARRAY_GL.push_back(coordinate/100); 
             
            this->VERTEX_ARRAY_GL.push_back(r);
            this->VERTEX_ARRAY_GL.push_back(g);
@@ -203,7 +201,7 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
            for( auto norm_dir : triangle.normal )       this->VERTEX_ARRAY_GL.push_back(norm_dir);
     //---------------------------------------------------------------------------------------------------
 
-           for( auto coordinate : triangle.vertex2 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
+           for( auto coordinate : triangle.vertex2 )    this->VERTEX_ARRAY_GL.push_back(coordinate/100); 
            
            this->VERTEX_ARRAY_GL.push_back(r);
            this->VERTEX_ARRAY_GL.push_back(g);
@@ -213,7 +211,7 @@ std::vector<COORD> LOAD_GL_VERTEX_ARRAY()
 
     //---------------------------------------------------------------------------------------------------        
        
-           for( auto coordinate : triangle.vertex3 )    this->VERTEX_ARRAY_GL.push_back(coordinate); 
+           for( auto coordinate : triangle.vertex3 )    this->VERTEX_ARRAY_GL.push_back(coordinate/100); 
                
            this->VERTEX_ARRAY_GL.push_back(r);
            this->VERTEX_ARRAY_GL.push_back(g);

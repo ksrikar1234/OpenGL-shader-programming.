@@ -11,7 +11,7 @@
       //------------------------------------Screen Resolution-----------------------------------------------------+
      
          GLFWwindow* window;
-         const GLuint SCR_WIDTH = 1980, SCR_HEIGHT = 1080;
+         const GLuint SCR_WIDTH = 800*1.8, SCR_HEIGHT = 600*1.8;
 
       //-------------------glfw window creation , checks , destruction Blah blah blah-----------------------------+
 
@@ -31,16 +31,16 @@
        inline short int check_glfw_window(GLFWwindow* window) 
        {
            if (!window) { std::cerr << "Failed to create GLFW window" << std::endl; glfwTerminate(); return -1; } 
-           else {std::cout << "Successfully created GLFW window" ; return 0; }
+           else {std::cout << "Successfully created GLFW window" << std::endl ; return 0; }
        }    
       
      //--------------------------Create a GLFW window-------------------------------------------------------------+
      
       inline void create_window() 
        {
-           // glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);   // Enable this for Fixing WINDOW SIZE
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);   // Enable this for Fixing WINDOW SIZE
            window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Triangle Picking with lighting effects", NULL, NULL);
-           // glfwSetWindowSizeLimits(window, SCR_WIDTH, SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT); // MIN MAX of WINDOW SIZE
+            glfwSetWindowSizeLimits(window, SCR_WIDTH, SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT); // MIN MAX of WINDOW SIZE
            check_glfw_window(window);
            glfwMakeContextCurrent(window);
            glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);      
@@ -55,12 +55,14 @@
          glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
          glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
          glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+
        }
 
       inline short int  check_glewInit() 
        {
          if (glewInit() != GLEW_OK)  {std::cerr << "Failed to initialize GLEW" << std::endl; glfwTerminate(); return -1; }
-         else { std::cout << "Successfully initialised GLEW"; return 0;}
+         else { std::cout << "Successfully initialised GLEW \n" ; return 0;}
        }
 
 
@@ -73,6 +75,8 @@ float ndcX , ndcY ;
 
 float initialMouseX = 0.0f ,  initialMouseY = 0.0f;
 
+int rightButtonState , leftButtonState;  
+
 float translate_mouse_x = 0.0f , translate_mouse_y = 0.0f ;
 
 float rotate_mouse_x = 0.0f  , rotate_mouse_y = 0.0f;
@@ -84,6 +88,8 @@ float up_key = 0.0f , down_key = 0.0f , left_key = 0.0f , right_key = 0.0f;
 float w_key = 0.0f , a_key = 0.0f , s_key = 0.0f , d_key = 0.0f , k_key = 0.0f , l_key = 0.0f; // For camera rotation movement [ +-x , +-y , +-z ]
 
 float y_key = 0.0f , h_key = 0.0f , g_key = 0.0f , j_key = 0.0f  , o_key = 0.0f , p_key = 0.0f; // For light source movement 
+
+bool space_key = false;
  
 //--------------------------------------------------Peripheral input handling--------------------------------------------------------------+
 
@@ -102,8 +108,8 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
     // float ndcX = (2.0f * mouse_x) / SCR_WIDTH - 1.0f;
     // float ndcY = 1.0f - (2.0f * mouse_y) / SCR_HEIGHT;
 
-    int rightButtonState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-    int leftButtonState  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    rightButtonState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+    leftButtonState  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     
 
     if (rightButtonState == GLFW_PRESS) 
@@ -138,9 +144,9 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 
         if (initial_leftClick )
           {
-            initialMouseX = 0;
-            initialMouseY = 0;
-            initial_leftClick  = false;
+            initialMouseX = mouse_x;
+            initialMouseY = mouse_y;
+            initial_leftClick =  false;
             translate_mouse_x =  initialMouseX;
             translate_mouse_y =  initialMouseY;
           }
@@ -152,7 +158,7 @@ inline void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
            }
        }
 
-        if(leftButtonState  == GLFW_RELEASE) 
+        else if(leftButtonState  == GLFW_RELEASE) 
           {
 
             initialMouseX = translate_mouse_x;
@@ -259,17 +265,14 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
         std::cout << " L key pressed" << std::endl;
     } 
-
-
     else if (key == GLFW_KEY_H && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
-        // Example: Move the camera or perform some action
+        // Example: Move the light 
          
          y_key += 0.8f;
 
         std::cout << " Y key pressed" << std::endl;
     } 
-
 
      else if (key == GLFW_KEY_Y && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
@@ -279,50 +282,59 @@ inline void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
         std::cout << " H key pressed" << std::endl;
     } 
-
-
         else if (key == GLFW_KEY_G && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
-        // Example: Move the camera or perform some action
+        // Example: Move the light
          
          g_key += 0.8f;
 
         std::cout << " H key pressed" << std::endl;
     } 
-
-
         else if (key == GLFW_KEY_J && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
-        // Example: Move the camera or perform some action
+        // Example: Move the light
          
          j_key += 0.8f;
 
         std::cout << " H key pressed" << std::endl;
     } 
-
-
-    
+ 
         else if (key == GLFW_KEY_O && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
-        // Example: Move the camera or perform some action
+        // Example: Move the light
          
          o_key += 0.8f;
 
         std::cout << " O key pressed" << std::endl;
     } 
 
-
-
-
         else if (key == GLFW_KEY_P && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
         // Handle L key press
-        // Example: Move the camera or perform some action
+        // Example: Move the light
          
          p_key += 0.8f;
 
         std::cout << " p key pressed" << std::endl;
     } 
 
+ else if (key == GLFW_KEY_SPACE && (action == GLFW_REPEAT  ||  action == GLFW_PRESS)) {
+        // Handle L key press
+        // Example: Move the light
+         
+         space_key = true;
+
+        std::cout << " space key pressed" << std::endl;
+    }
+
+    else if (key == GLFW_KEY_SPACE && (action == GLFW_RELEASE) )
+    {
+        // Handle  key press
+        // Example: Move the light
+         
+         space_key = false;
+
+        std::cout << " space key released" << std::endl;
+    }
 
 }
 

@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 #include <regex>
-#include<cmath>
+#include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,7 +29,7 @@ inline void setup_transformations()
 
     float set_axis_x =  10*((2.0*rotate_mouse_x/SCR_WIDTH)-1.0f) , set_axis_y = 10*(1.0f-(2.0*rotate_mouse_y/SCR_HEIGHT));
 
-    auto X = (2.0f * std::abs(translate_mouse_x )) / SCR_WIDTH - 1.0f  , Y = 1.0f - (2.0f * std::abs(translate_mouse_y)) / SCR_HEIGHT;
+    auto X = (80.0f * std::abs(translate_mouse_x ) + 10) / SCR_WIDTH - 1.0f  , Y = 1.0f - (80.0f * std::abs(translate_mouse_y) +10) / SCR_HEIGHT;
 
     //-----------------------------Translate + Rotate  + Zoom functionality---------------------------------+
     //-------------------------X-axis-----------------Y-axis----------------Z-axis--------------------------+
@@ -47,8 +47,47 @@ inline void setup_transformations()
     //-----------------------------------functionality-----------------------------------------------+
 
     model = glm::mat4(1.0f);
-        
-    projection = glm::perspective(glm::radians(45.0f ), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f) ; // (Remember this)
+    /*
+    const float left = -1.0f;    // Left boundary of the viewport
+    const float right = 1.0f;    // Right boundary of the viewport
+    const float bottom = -1.0f;  // Bottom boundary of the viewport
+    const float top = 1.0f;      // Top boundary of the viewport
+    const float nearPlane = -1.0f; // Near clipping plane (distance to the camera)
+    const float farPlane = 1.0f;  // Far clipping plane (distance from the camera)
+    glm::mat4 projectionMatrix = glm::ortho(left, right, bottom, top, nearPlane, farPlane);
+    */  
+    
+    // Define the boundaries of the view volume
+    float aspectRatio = SCR_WIDTH/SCR_HEIGHT;
+    float left = -aspectRatio;  // Aspect ratio: width / height
+    float right = aspectRatio;
+    float bottom = -aspectRatio;
+    float top = aspectRatio;
+    float nearPlane = -100.0f;
+    float farPlane = 600.0f;
+
+    float zoomFactor = 0.5f + scroll_offset;
+
+   // zoomFactor = std::abs(zoomFactor);
+    // Adjust the boundaries based on the zoom factor
+    left /= zoomFactor;
+    right /= zoomFactor;
+    bottom /= zoomFactor;
+    top /= zoomFactor;
+
+    // Create the orthogonal projection matrix
+     projection = glm::ortho(left, right, bottom, top, nearPlane, farPlane);
+
+
+
+  //  projection = glm::perspective(glm::radians(45.0f ), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f) ; // (Remember this)
+   
+
+
+
+
+
+
 }
 
 //-----------------------------------------Perform Ray Triangle intersection Mollers intersection -------------------------------------------------+

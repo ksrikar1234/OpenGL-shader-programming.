@@ -4,19 +4,23 @@
 #include <GLFW/glfw3.h>
 
 //---------------------------Offscreen Rendering for face picking using  mouse--------------------------------------------------------------+ 
+
 const char* OffScreenVertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
     layout (location = 1) in vec3 aColor;
-
+    layout (location = 2) in vec3 normal;
+ 
     out vec3 outColor;
-
-    uniform mat4 mvp;
+  
+    uniform mat4 modelMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
 
 
     void main()
     {
-        gl_Position = mvp*vec4(aPos, 1.0);
+        gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(aPos, 1.0);
         outColor = aColor;
     }
 )";
@@ -34,9 +38,9 @@ const char* OffScreenFragmentShaderSource = R"(
     }
 )";
 
-//-------------------------------------------------------------------------------------------------------------------------------------------+
+//-------------------------------------------------------Phongs Lighting algorithm ------------------------------------------------------------------------------------+
 
-//--------------------------------------Onscreen rendering Vertex Shader-----------------------------------------------------------------------------+
+//--------------------------------------Onscreen rendering Vertex Shader with Lights -----------------------------------------------------------------------------+
 
 
 const char* OnScreenVertexShaderSource = R"(
@@ -57,6 +61,9 @@ uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 lightPosition;
 
+uniform vec3 selected_color;
+
+
 void main()
 {
     // Transform vertex position and normal to world space
@@ -69,7 +76,13 @@ void main()
     // Pass data to the fragment shader
     fragNormal = worldNormal;
     fragPosition = worldPosition.xyz;
-    vertexColor = color;
+    
+     vertexColor = vec3(0.5f, 0.5f , 0.5f );
+     if(selected_color == color)
+       {
+          vertexColor = vec3(1.0f, 1.0f , 1.0f );
+       }
+    //vertexColor = color;
 
     // Transform the vertex position to clip space
     gl_Position = projectionMatrix * viewMatrix * worldPosition;
@@ -97,6 +110,8 @@ uniform vec3 materialDiffuse;
 uniform vec3 materialSpecular;
 uniform float materialShininess;
 
+
+
 void main()
 {
     // Compute the normal and light direction in fragment space
@@ -118,7 +133,18 @@ void main()
     vec3 finalColor = ambientColor + diffuseColor + specularColor;
     finalColor = finalColor * vertexColor;
  
-    fragColor = vec4(finalColor, 1.0);
+    
+    vec3 haloColor = vec3(1.0f , 1.0f , 1.0f);
+
+    float haloRadius = 5;
+   
+    float distance = length(fragPosition);
+    
+    float haloFactor = 1.0 - smoothstep(haloRadius - 0.1, haloRadius + 0.1, distance);
+
+    finalColor = finalColor * haloColor;
+   
+    fragColor = vec4(finalColor, haloFactor);
 }
 
 )";
@@ -136,6 +162,9 @@ GLuint  OnScreenShaderProgram , OffScreenShaderProgram  ;
 
 inline void manage_shaders()
 {
+
+    GLint success;
+    GLchar infoLog[512];
    
     //--------------------- Create  vertex shader for Onscreen rendering-------------------------------------+
     
@@ -145,13 +174,12 @@ inline void manage_shaders()
 
     //----------------------------Check for vertex shader compile errors-------------------------------------+
    
-    GLint success;
-    GLchar infoLog[512];
+    
     glGetShaderiv(OnScreenVertexShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
         glGetShaderInfoLog(OnScreenVertexShader, 512, nullptr, infoLog);
-        std::cerr << "Vertex shader or Onscreen rendering failed to compile  : \n" << infoLog << std::endl;
+        std::cerr << "Vertex shader for Onscreen rendering failed to compile  : \n" << infoLog << std::endl;
     }
 
     //-------------------------------Create fragment shader for Onscreen rendering-----------------------------------------------+
@@ -203,7 +231,7 @@ inline void manage_shaders()
     if (!success)
     {
         glGetShaderInfoLog(OffScreenVertexShader, 512, nullptr, infoLog);
-        std::cerr << "Vertex shader compilation failed:\n" << infoLog << std::endl;
+        std::cerr << "OffScreenVertex shader compilation failed:\n" << infoLog << std::endl;
     }
 
     //-------------------------------Create fragment shader-----------------------------------------------+
@@ -218,7 +246,7 @@ inline void manage_shaders()
     if (!success)
     {
         glGetShaderInfoLog(OffScreenFragmentShader, 512, nullptr, infoLog);
-        std::cerr << "Fragment shader compilation failed:\n" << infoLog << std::endl;
+        std::cerr << "OffScreenFragment shader compilation failed:\n" << infoLog << std::endl;
     }
 
     //---------------------------Create shader program-----------------------------------------------------+
@@ -241,7 +269,6 @@ inline void manage_shaders()
 
      glDeleteShader(OffScreenVertexShader);
      glDeleteShader(OffScreenFragmentShader);
-
 }
 
 /*
